@@ -18,63 +18,85 @@ int main(int argc, char* argv[]) //lets st
       return 1;
     }
   }
-  int usrinput1,usrinput2;
-  int pid,scn,param_c,value1,value2,results;
-  pid = getpid();
-  printf("%d\n", pid);
-  printf("enter a number -1 to 7");
-  scanf("%d", &usrinput1); // we got the system call number
-  printf("input: %d\n", usrinput1);
   
   int fd = open("mainFIFO", O_WRONLY);
-  if (fd == -1) { return 2; }
-   
-  if (write(fd, &pid, sizeof(int)) == -1) { return 3; }
-  if (write(fd, &usrinput1, sizeof(int)) == -1) { return 3; }
-  ////////////////////////////////////////////////////////////
-  if (usrinput1 == 1 || usrinput1 == 6) {
-    param_c = 0;
-    if (write(fd, 0, sizeof(int)) == -1) { return 3; }
-    printf("Does this get called\n");
-  } // i can make this more readable for sure
+  if (fd == -1) {printf("0"); return 2; }
+  int usrinput1,usrinput2 = 0;
+  int pid,scn,param_c,value1,value2,results;
+  scn =1;
+  param_c = 1;
+  pid = getpid();
   
-  if (usrinput1 == 2 || usrinput1 == 3 || usrinput1 == 4 || usrinput1 == 5) {
-    param_c = 2;
-    if (write(fd, &param_c, sizeof(int)) == -1) { return 3; }
-    printf("Enter your first number: ");
-    scanf("%d", &usrinput2);
-    if (write(fd, &usrinput2, sizeof(int)) == -1) { return 3; }
-    printf("Enter your second number: ");
-    scanf("%d", &usrinput2);
-    if (write(fd, &usrinput2, sizeof(int)) == -1) { return 3; }
-  }
-  printf("what is here %d", usrinput1);
-  if (usrinput1 == 7 || usrinput1 == 0 || usrinput1 ==-1) {
+  if (write(fd, &pid, sizeof(int)) == -1) { return 3; }
+  printf("pid: %d\n", pid);
+  if (write(fd, &scn, sizeof(int)) == -1) { return 3; }
+  printf("scn: %d\n", scn);
+  if (write(fd, &param_c, sizeof(int)) == -1) { return 3; }
+  printf("param_c: %d\n", param_c);
+  printf("-----------------------\n");
+  
+  while (1) {
+  if (write(fd, &pid, sizeof(int)) == -1) { return 3; } //write pid
+  //Now we are asking the user to select what they want
+  printf("pid: %d\n", pid);
+  printf("enter a number -1 to 7: ");
+  scanf("%d", &scn); 
+  printf("scn input: %d\n", scn);
+  //they all will send the pid and the a SCN
+  if (write(fd, &scn, sizeof(int)) == -1) { return 3; } //write usrinput
+  //sectioning them off by param_c
+  
+  if(scn == 1) {
     param_c = 1;
+    if (write(fd, &param_c, sizeof(int)) == -1) { return 3; }
+  }
+  if (scn == 6) { // without 1 bc thats only called once
+    param_c = 1; // 1 param
     if (write(fd, &param_c, sizeof(int)) == -1) { return 3; }
     printf("Enter a number: ");
     scanf("%d", &usrinput2);
-    if (write(fd, &usrinput2, sizeof(int)) == -1) { return 3; }
-  } //ill need a return x if this doesnt input a number ////////////////////////////
+    if (write(fd, &usrinput2, sizeof(int)) == -1) { return 3; } // sending 1 param 
+  }
+  if (scn == 0 || scn == -1 || scn ==7) {
+  }
   
+  if (scn == 2 || scn == 3 || scn == 4 || scn == 5) {
+    param_c = 2;
+    if (write(fd, &param_c, sizeof(int)) == -1) { return 3; }
+    printf("Enter your first number: ");
+    scanf("%d", &usrinput1);
+    if (write(fd, &usrinput1, sizeof(int)) == -1) {  return 3;}
+    printf("Enter your second number: ");
+    scanf("%d", &usrinput2);
+    if (write(fd, &usrinput2, sizeof(int)) == -1) { return 3;}
+  }
   close(fd);
-  open ("mainFIFO", O_RDONLY);
+  open ("mainFIFO", O_RDONLY); 
   
-  if (usrinput1 == 1 || usrinput1 == 6) { 
-    printf("Returned: nothing");
-  } 
-  
-  if (usrinput1 == 2 || usrinput1 == 3 || usrinput1 == 4 || usrinput1 == 5) {
-    if(read(fd, &results, sizeof(int)) == -1) { return 3; } 
+  if (scn == 2 || scn == 3 || scn == 4 || scn == 5) {
+    if(read(fd, &results, sizeof(int)) == -1) {return 3;  } 
     printf("Returned: %d\n", results);
   }
-  printf("what is here %d", usrinput1);
-  if (usrinput1 == 7 || usrinput1 == 0 || usrinput1 ==-1) {
+  if(scn == 6) {
     if(read(fd, &results, sizeof(int)) == -1) { return 3; } 
-    printf("Returned: %d\n", results);
-  } 
-  
+    printf("We saved: %d\n", results);
+  }
+  if(scn == 7) {
+    if(read(fd, &results, sizeof(int)) == -1) { return 3; } 
+    printf("We saved: %d\n", results);
+  }
+  if(scn == 0) {
+    return 0;
+  }
+  if (scn == -1) {
+    return 0;
+  }
+  if(scn == 1) {
+    printf("connection made\n");
+  }
+  printf("------------------------------------\n");
   close(fd);
-   
+  open("mainFIFO", O_WRONLY);
+}
   return 0;
 }
