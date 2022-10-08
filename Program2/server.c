@@ -13,132 +13,135 @@
 int main(int argc, char* argv[]) //lets st
 {
 
-if (mkfifo("Server", 0777) == -1) { //error checking
+if (mkfifo("Server", 0777) == -1) { //if it does not already exist
     if (errno != EEXIST) { //checks if it exists
 	printf("Could not create fifo file\n"); 
       return 1;
     }
   }
+int reader = open ("Server", O_RDONLY); //reads from client
 
-//open reader
-int reader = open ("Server", O_RDONLY); //create serverfifo 
-
-//initialize all values
-int pid,sysCall,num_param,num1,num2;
-int memory=0;
-int counter = 0;
-int array[30];
-char strPid[4];
+int pid,scn,param_c,val1,val2; 
+int memory, simPid=0;
+int array[33];
+char strPid[6];
 
 
-//infinite loop 
+
 while(1){ open("Server", O_RDONLY);
+  //grabing pid scn and param_c
+	if (read(reader, &pid, sizeof(int)) == -1) {return 2;}
+	printf("[+] client PID: %d\n", pid);
+	//printf("test");
+	
+	if (read(reader, &scn, sizeof(int)) == -1) {return 2;}
+	printf("SCN: %d\n", scn);
+	
+	if (read(reader, &param_c, sizeof(int)) == -1) {return 2;} 
+	printf("param_c: %d\n", param_c);
+  //end of init data collection
+	
+	
+	
+	
+	// decision based on param_c
+	if(param_c == 0) {printf("param_c: N/A\n"); }
 
-	read(reader, &pid, sizeof(int));//get process ID from client
-	printf("client Process ID: %d\n", pid);
-	
-	read(reader, &sysCall, sizeof(int));//let user choose an action
-	printf("System call requested: %d\n", sysCall);
-	
-	read(reader, &num_param, sizeof(int)); // get number of parameters 				depending on system call number
-	printf("with %d parameter/s which is/are: \n", num_param);
-
-	
-	
-	//for no parameters
-	if(num_param == 0) {printf("none given\n"); }
-
-	//for two parameters
-	if (num_param == 2){
-		read(reader, &num1,sizeof(int));
-		printf("parameter 1: %d\n", num1);
-		read(reader, &num2,sizeof(int));
-		printf("parameter 2: %d\n", num2);
+	if(param_c == 1){
+		if (read(reader, &val1, sizeof(int)) == -1) {return 3;}
+		printf("%d\n", val1);
 	}
 	
-	//for one parameters
-	if(sysCall == 6){
-		read(reader, &num1, sizeof(int));
-		printf("%d\n", num1);
+	if (param_c == 2){//theres not 1 value
+		if (read(reader, &val1,sizeof(int)) == -1) {return 3;}
+		printf("val1: %d\n", val1);
+		if (read(reader, &val2,sizeof(int)) == -1) {return 3;}
+		printf("val2: %d\n", val2);
 	}
-	
-	if (sysCall == 1){
-		counter+=1;
-		array[counter] = pid;
-	}
-	
+	/////////
 	int sum, diff, mult, div =0;
+	///////// for calculations
+	if (scn == 1){ // what does this do
+		simPid+=1;
+		array[simPid] = pid;
+	}//end of param_c
+	
+	
+	
+	
+	
 	close(reader);
 	if(pid<30){
-	pid = array[pid];
+	pid = array[pid];//and this
 	}
+	
 	sprintf(strPid, "%d",pid);
-	int writer = open(strPid, O_WRONLY);//write to client fifo
-	switch(sysCall){
+	int writer = open(strPid, O_WRONLY);
+	
+	
+	//calculator
+	switch(scn){
 		case 1:
-			write(writer, &counter, sizeof(int));
-		
-			break;//set up before the switch
+			write(writer, &simPid, sizeof(int));
+			break;
 			
-		case 2 : //summation
-			printf("%d + %d = ", num1, num2);
-			sum = num1 + num2;
-			write(writer, &sum, sizeof(int));
+		case 2 : //add
+			printf("returning: %d + %d = ", val1, val2);
+			sum = val1 + val2;
+			if (write(writer, &sum, sizeof(int)) == -1) {return 4;}
 			printf("%d\n",sum);
 			break;
 			
-		case 3 : //subtraction
-			printf("%d - %d = ", num1, num2);
-			diff = num1 - num2;
-			write(writer, &diff, sizeof(int));
+		case 3 : //sub
+			printf("returning: %d - %d = ", val1, val2);
+			diff = val1 - val2;
+			if (write(writer, &diff, sizeof(int)) == -1) {return 4;}
 			printf("%d\n",diff);
 			break;
 		
-		case 4 : //multiplication
-			printf("%d * %d = ", num1, num2);
-			mult = num1 * num2;
-			write(writer, &mult, sizeof(int));
+		case 4 : //mul
+			printf("returning: %d * %d = ", val1, val2);
+			mult = val1 * val2;
+			if (write(writer, &mult, sizeof(int)) == -1) {return 4;}
 			printf("%d\n",mult);
 			break;
 		
-		case 5 : //Divison
-			printf("%d / %d = ", num1, num2);
-			div = num1 / num2;
-			write(writer, &div, sizeof(int));
+		case 5 : //div
+			printf("returning: %d / %d = ", val1, val2);
+			div = val1 / val2;
+			if (write(writer, &div, sizeof(int)) == -1) {return 4;}
 			printf("%d\n",div);
 			break;
 			
-		case 6 : // store to memory
-			memory = num1;
+		case 6 : // store
+			memory = val1;
 			printf("stored: %d\n", memory);
-			write(writer, &memory, sizeof(int));
+			if (write(writer, &memory, sizeof(int)) == -1) {return 4;}
 			break;
 		
-		case 7 : // store to memory
+		case 7 : // read from memeory
 			printf("recalled: %d\n", memory);
-			write(writer, &memory, sizeof(int));
+			if (write(writer, &memory, sizeof(int)) == -1) {return 4;}
 			break;
 			
 		case 0 : //exit 
-			printf("closing client FIFO\n");
+			printf("[+] closing client FIFO\n");
 			close(writer);	
 			break;
 		case -1://terminate
-			printf("terminating\n");
+			printf("[+] terminating\n");
 			close(writer);	
 			break;
 		default:
-			printf("Invalid input\n" );
+			printf("[+] SCN is invlaid\n" );
 			break;
 		
-	}// end switch/case
-
-	if(sysCall == -1){break;}
+	}
+  printf("---------------------------\n");
+	if(scn == -1){break;}//??
 	close(writer);	
-	
 
-}//end while loop
-	
+}	
 	//return 0;
-}//end main
+}
  
