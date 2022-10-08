@@ -12,9 +12,9 @@
 
 int main(int argc, char* argv[])
 {
-
-int pid = getpid();
-char strPid[4];
+char strPid[5];
+int pid, scn, val1, val2, results, param_c, cont;  
+pid = getpid(); 
 
 sprintf(strPid, "%d", pid);
 
@@ -25,137 +25,121 @@ if (mkfifo(strPid, 0777) == -1) { //error checking
       return 1;
     }
   }
-//start initializing
-int sysCall, inputval, results, num_param;
-//char fifoName[] = "FIFO2";
-//open write mode
+  int writer = open("Server", O_WRONLY);
+  if (writer == -1) {printf("0"); return 2; }
+  
+  
+if (mkfifo("Server", 0777) == -1) { 
+  if (errno != EEXIST) { 
+    return 1;
+  }
+}
 
+printf("enter 1 to initiate connection with server: ");
+scanf("%d", &scn);
 
-
-printf("Process ID: %d\n", pid);
-
-
-
-//send fifoname to start client specific fifo
-printf("enter system call 1 to connect to server ");
-scanf("%d", &sysCall);
-
-int writer = open("Server", O_WRONLY);
-if (writer == -1) { return 2; }
-
-
-
-
-printf("Sending process id %d to server\n", pid);
-
-
-
-
-int cont;
-
-
-
+printf("Sending PID: %d to server\n", pid);
 
 while(1){
-	
 	open("Server", O_WRONLY);
-	
-
-	
-	
-	
-	write(writer, &pid, sizeof(int));
-	if(sysCall == 1){
-	printf("system call number requested: %d\n", sysCall);
-	write(writer, &sysCall, sizeof(int));
+	if(scn == 1){
+	  printf("[+] initiating connection with server...\n");
+	  if (write(writer, &pid, sizeof(int)) == -1) { return 3; } 
+	  printf("SCN: %d\n", scn);
+	  if (write(writer, &scn, sizeof(int)) == -1) {return 3;}
 	}
 	else{
-	
-	//choice menu
-	int choice;
-	printf("Choose one of the following:\n 1- Send request to server\n 2-Exit\n 3-Terminate\n");
-	scanf("%d", &choice);
+	  int choice;
+	  printf("Select a state for pid %d:\n 1-Send request to server\n 2-Exit client\n 3-Terminate server connection\n => ", pid);
+	  scanf("%d", &choice);
+	  write(writer, &pid, sizeof(int));
 	if (choice == 1){
-		printf("Which system call? 2- add\n 3- subtract\n 4- multiply\n 5- divide\n 6-store\n 7- recall\n");
-		scanf("%d",&sysCall);
-		printf("system call number requested: %d\n", sysCall);
-		write(writer, &sysCall, sizeof(int));
+		printf("\n Select a SCN: \n  2- add\n  3- subtract\n  4- multiply\n  5- divide\n  6- store\n  7- recall\n  =>");
+		scanf("%d",&scn);
+		printf("\nSending SCN: %d\n", scn);
+		write(writer, &scn, sizeof(int));
 	}
 	if (choice == 2){
-		sysCall = 0;
+		scn = 0;
 		printf("System call 0 sent, exiting now\n");
-		write(writer, &sysCall, sizeof(int));
+		write(writer, &scn, sizeof(int));
 		
 		}
 	if (choice == 3){
-		sysCall= -1;
+		scn= -1;
 		printf("system call -1 sent, terminating now\n");
-		write(writer, &sysCall, sizeof(int));	
+		write(writer, &scn, sizeof(int));	
 	}
-}//end else
-	if (sysCall == 6){
-		num_param = 1;
-		write(writer, &num_param, sizeof(int));
-		printf("Enter a number: ");
-		scanf("%d", &inputval);
-		write(writer, &inputval, sizeof(int));
+}
+
+	if (scn == 6){
+		param_c = 1;
+		write(writer, &param_c, sizeof(int));
+		printf("Val1: ");
+		scanf("%d", &val1);
+		write(writer, &val1, sizeof(int));
 		
 	}
-	if (sysCall == 2 || sysCall == 3 || sysCall == 4 || sysCall == 5) {
-		num_param = 2;
-		write(writer, &num_param, sizeof(int));
+	if (scn == 2 || scn == 3 || scn == 4 || scn == 5) {
+		param_c = 2;
+		write(writer, &param_c, sizeof(int));
 		
-		printf("Enter first number: ");
-		scanf("%d", &inputval);
-		write(writer, &inputval, sizeof(int));
+		printf("Val1: ");
+		scanf("%d", &val1);
+		write(writer, &val1, sizeof(int));
 		
-		printf("Enter second number: ");
-		scanf("%d", &inputval);
-		write(writer, &inputval, sizeof(int));
+		printf("Val2: ");
+		scanf("%d", &val2);
+		write(writer, &val2, sizeof(int));
 		
 
 	}
-	if(sysCall == 7 || sysCall == 1){
-		num_param = 0;
-		write(writer, &num_param, sizeof(int));
+	if(scn == 7 || scn == 1){
+		param_c = 0;
+		write(writer, &param_c, sizeof(int));
 		}
 
-	if(sysCall == 0 || sysCall ==-1){
-		num_param = 0;
-		write(writer, &num_param, sizeof(int));
-		printf("closing client\n");
+	if(scn == 0 || scn ==-1){
+		param_c = 0;
+		write(writer, &param_c, sizeof(int));
 	}
 	
 
 	
 	close(writer);
-	//open read mode
 	int reader = open(strPid, O_RDONLY);
 	if (reader == -1) { return 2; }
 	
-	if(sysCall == 7){
-		//num_param = 0;
+	if(scn == 7){
 		read(reader, &results, sizeof(int));
 		printf("Recalled: %d\n", results);
 	}
 	
-	if (sysCall == 2 || sysCall == 3 || sysCall == 4 || sysCall == 5) {
+	if (scn == 2 || scn == 3 || scn == 4 || scn == 5) {
 	read(reader, &results, sizeof(int));
 		printf("returned result: %d\n",results);
 	}
-	if(sysCall == 6){
+	if(scn == 6){
 	read(reader, &results, sizeof(int));
 		printf("Stored: %d\n", results);
 	}
-	if(sysCall == 0 || sysCall == -1){break;}
-	if(sysCall == 1){
+	if(scn == 0 || scn == -1){
+	  if(scn == 0)
+		  printf("[+] Closing Client\n");
+		else {
+		  printf("[+] Killing Server\n");
+		}
+	  return 0;
+	  break;
+	}
+	
+	if(scn == 1){
 	read(reader, &pid, sizeof(int));
 	printf("New ID: %d\n", pid);
 	}
-		sysCall = 0;
+		scn = 0;
 		close(reader);
-	printf("continue client %d? ", pid);
-	scanf("%d", &cont);
+	printf("---------------------------------\n");
 }//end while
 
 }//end main
