@@ -13,13 +13,14 @@
 #include <sys/queue.h>
 
 void semaphore_Scheduler(void);
-int Calculate(void);
+//int Calculate(void);
 int semKey_Lookup(int); 
 void insertIntoQueue_Sema(int);
 int removeFromQueue_Sema();
 void insertIntoQueue_Connected(int); 
 int removeFromQueue_Connected();
 void Remove_said_Client(int);
+void Calculate();
 
 sem_t semaphore;
 int semaphore_Value, fd;
@@ -36,6 +37,12 @@ int count_Connected = 0;
 int queue_Sema_Wait[33];
 int count_Wait = 0;
 
+int reader;//fifos
+int writer;
+
+
+
+
 
 
 int main(int argc, char* argv[]) //lets st
@@ -43,7 +50,7 @@ int main(int argc, char* argv[]) //lets st
   //printf("this is a test");
   //Remove_said_Client(1);
   printf("test semaphore\n");
-  semaphore_Scheduler();
+  //semaphore_Scheduler();
   printf("test semaphore\n");
   printf("test semaphore\n");
 
@@ -53,7 +60,7 @@ if (mkfifo("Server", 0777) == -1) { //if it does not already exist
       return 1;
     }
   }
-int reader = open ("Server", O_RDONLY); //reads from client
+reader = open ("Server", O_RDONLY); //reads from client
 
 //int pid,scn,param_c,val1,val2;//can i get rid of this? 
 //int memory, simPid=0;
@@ -63,20 +70,40 @@ int reader = open ("Server", O_RDONLY); //reads from client
 
 
 while(1){ open("Server", O_RDONLY);
-
-  //if (pid > 30) {
-   // send the info just to connect
-  //}
-
-  //grabing pid scn and param_c
-	if (read(reader, &pid, sizeof(int)) == -1) {return 2;}
+  
+  if (read(reader, &pid, sizeof(int)) == -1) {return 2;}
+  printf("test");
 	printf("[+] client PID: %d\n", pid);
-	//printf("test");
+	printf("test");
 	
-	if (read(reader, &scn, sizeof(int)) == -1) {return 2;}
+	if (pid > 30) {
+	  close(reader);
+	  sprintf(strPid, "%d",pid);
+	  writer = open(strPid, O_WRONLY);
+	  //scn = 1;
+	  write(writer, &simPid, sizeof(int)); // we are sending the simulated pid
+	  close(writer);
+	} else {
+	  while (1) {
+	    semaphore_Scheduler();
+	  }
+	}
+ }	
+}
+
+
+
+
+
+
+
+void Calculate() {
+  open("Server", O_RDONLY);
+	
+	if (read(reader, &scn, sizeof(int)) == -1) {exit(2);}
 	printf("SCN: %d\n", scn);
 	
-	if (read(reader, &param_c, sizeof(int)) == -1) {return 2;} 
+	if (read(reader, &param_c, sizeof(int)) == -1) {exit(2);} 
 	printf("param_c: %d\n", param_c);
   //end of init data collection
 	
@@ -87,14 +114,14 @@ while(1){ open("Server", O_RDONLY);
 	if(param_c == 0) {printf("param_c: N/A\n"); }
 
 	if(param_c == 1){
-		if (read(reader, &val1, sizeof(int)) == -1) {return 3;}
+		if (read(reader, &val1, sizeof(int)) == -1) {exit(3);}
 		printf("%d\n", val1);
 	}
 	
 	if (param_c == 2){//theres not 1 value
-		if (read(reader, &val1,sizeof(int)) == -1) {return 3;}
+		if (read(reader, &val1,sizeof(int)) == -1) {exit(3);}
 		printf("val1: %d\n", val1);
-		if (read(reader, &val2,sizeof(int)) == -1) {return 3;}
+		if (read(reader, &val2,sizeof(int)) == -1) {exit(3);}
 		printf("val2: %d\n", val2);
 	}
 	/////////
@@ -114,8 +141,7 @@ while(1){ open("Server", O_RDONLY);
 	}
 	
 	sprintf(strPid, "%d",pid);
-	int writer = open(strPid, O_WRONLY);
-	
+	writer = open(strPid, O_WRONLY);
 	
 	//calculator
 	switch(scn){
@@ -126,55 +152,52 @@ while(1){ open("Server", O_RDONLY);
 		case 2 : //add
 			printf("val1: %d and val2: %d = ", val1, val2);
 			sum = val1 + val2;
-			if (write(writer, &sum, sizeof(int)) == -1) {return 4;}
+			if (write(writer, &sum, sizeof(int)) == -1) {exit(4);}
 			printf("%d\n",sum);
 			break;
 			
 		case 3 : //sub
 			printf("val1: %d and val2: = %d ", val1, val2);
 			diff = val1 - val2;
-			if (write(writer, &diff, sizeof(int)) == -1) {return 4;}
+			if (write(writer, &diff, sizeof(int)) == -1) {exit(4);}
 			printf("%d\n",diff);
 			break;
 		
 		case 4 : //mul
 			printf("val1: %d and val2: %d = ", val1, val2);
 			mult = val1 * val2;
-			if (write(writer, &mult, sizeof(int)) == -1) {return 4;}
+			if (write(writer, &mult, sizeof(int)) == -1) {exit(4);}
 			printf("%d\n",mult);
 			break;
 		
 		case 5 : //div
 			printf("val1: %d and val2: %d = ", val1, val2);
 			div = val1 / val2;
-			if (write(writer, &div, sizeof(int)) == -1) {return 4;}
+			if (write(writer, &div, sizeof(int)) == -1) {exit(4);}
 			printf("%d\n",div);
 			break;
 			
 		case 6 : // store
 			memory = val1;
 			printf("stored: %d\n", memory);
-			if (write(writer, &memory, sizeof(int)) == -1) {return 4;}
+			if (write(writer, &memory, sizeof(int)) == -1) {exit(4);}
 			break;
 		
 		case 7 : // read from memeory
 			printf("recalled: %d\n", memory);
-			if (write(writer, &memory, sizeof(int)) == -1) {return 4;}
+			if (write(writer, &memory, sizeof(int)) == -1) {exit(4);}
 			break;
 			
 		case 0 : //exit 
 			printf("[+] closing client FIFO\n");//if a client exits, remove him from the queue
 			close(writer);	//remove and shift
-			//if (scn == 1){ // saves a new client into memory
-		    //simPid+=1; //current id count 
-		    //array[simPid] = pid;// creates simpid
-		    //removeFromQueue_Connected(pid); //removes connected client but not the one we want to remove unless we manipulate the queue to push what everone we are moving to the front!
-	    //}
+			removeFromQueue_Sema();//removes from sema queue
+			Remove_said_Client(pid); //removes sim pid from connected clients
 			break;
 		case -1://terminate
 			printf("[+] terminating\n");
 			close(writer);	
-			return 1;
+			exit(1);
 			break;
 		default:
 			printf("[+] SCN is invlaid\n" );
@@ -186,35 +209,45 @@ while(1){ open("Server", O_RDONLY);
 	close(writer);	
 
 }	
-	//return 0;
-}
- 
+
+
+
+
+
+
+
 
 void semaphore_Scheduler(void) {
   char to_Lock[25] = "The key has been locked";
   char not_To_Lock[30] = "The key has been unlocked";
   char Failed[25] = "failure!";
-	int sys_Call = 1;
-	int sema_Val;
-	static int sema_Queue_Index = 0;
-	sem_init(&semaphore, 1, 1);
+  int sys_Call = 1;
+  int sema_Val;
+  static int sema_Queue_Index = 0;
+  sem_init(&semaphore, 1, 1);
   //Need sim id
+  //what if we had a while loop here?????
   
+  //printf("Select a sempahore state for pid %d:\n 1- Wait for key \n 2- Post key \n 3-Print all connected clients\n =>", pid);
+  if (read(reader, &sys_Call, sizeof(int)) == -1) {exit(5);}
+	printf("\nsys_Call: %d\n", sys_Call);
   
   if (sys_Call == 1) { //To Lock
     insertIntoQueue_Sema(pid); //this throws the pid into the queue
 		sem_wait(&semaphore); //To lock and waits if semaphore is == 0
 		printf("%s\n", to_Lock);
-		printf("this sema == %d\n", sem_getvalue(&semaphore, &sema_Val));
+		printf("this sema = %d\n", sem_getvalue(&semaphore, &sema_Val));
+		Calculate();
   }
   if (sys_Call == 2) { //Or not to Lock
-    if (sem_getvalue(&semaphore, &sema_Val) == 0 && semKey_Lookup(0) != pid){ //Not locked by this client
-      //print failure and send
+    if (sem_getvalue(&semaphore, &sema_Val) == 0 && queue_Sema_Wait[0] == pid){ //Not locked by this client
+      printf("Failure, you dont have the semaphore\n");
+	  //write to client
     }
-    if (sem_getvalue(&semaphore, &sema_Val) == 0 && semKey_Lookup(0) == pid){ //locked by this client and no other in queue
-      //post and acknowledge
-        //if(others in queue)
-          //give him the key and tell him
+    if (sem_getvalue(&semaphore, &sema_Val) == 0 && queue_Sema_Wait[0] == pid){ //locked by this client and no other in queue
+      sem_post(&semaphore);
+	  printf("ACk sent\n");//post and acknowledge
+	  //break off here
     }
   }
   if(sys_Call == 3) {
@@ -226,23 +259,29 @@ void semaphore_Scheduler(void) {
   }
 }
 
-int semKey_Lookup(int pid_Q) {
-  //who has the key and we could also do a send all of the pids
-  int keyholder;
-  keyholder = Sema_Queue[0]; //who ever is the first person
-  return keyholder;
-}
 
-void Remove_said_Client(int num){
+
+
+
+
+
+
+
+
+
+
+//Queuing deltas//
+//////////////////////////////////////////////////////////////////////////
+void Remove_said_Client(int sim_PID){
   printf("this is a test for rearrange");
   int arr_Store[333];
   int i = 0;
   while (1 < 2){
     int val = removeFromQueue_Connected();
-    if (val == num) {
+    if (val == sim_PID) {
       for (int k = 0; k < i; k++){
         insertIntoQueue_Connected(arr_Store[k]);
-        //return; //get out of this method
+        return; //get out of this method
         //break;//does this get me out of the foor or while loop?
       }
       return;
@@ -251,6 +290,11 @@ void Remove_said_Client(int num){
     i++;
   }
 }
+
+
+
+
+
 
 //////////////////////////////////////////////////////////////////
 void insertIntoQueue_Connected(int x) {//nothing to do with the key, they are just connected
